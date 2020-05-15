@@ -13,11 +13,11 @@ const (
 
 type SharedConn struct {
 	sync.Mutex
-	net.TCPConn               // the raw connection
+	net.Conn               // the raw connection
 	VhostBuf *bytes.Buffer // all of the initial data that has to be read in order to vhost a connection is saved here
 }
 
-func newShared(conn net.TCPConn) (*SharedConn, io.Reader) {
+func newShared(conn net.Conn) (*SharedConn, io.Reader) {
 	c := &SharedConn{
 		TCPConn:  conn,
 		VhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
