@@ -19,7 +19,7 @@ type SharedConn struct {
 
 func newShared(conn net.Conn) (*SharedConn, io.Reader) {
 	c := &SharedConn{
-		TCPConn:  conn,
+		Conn:  conn,
 		VhostBuf: bytes.NewBuffer(make([]byte, 0, initVhostBufSize)),
 	}
 
