@@ -24,10 +24,19 @@ type TLSConn struct {
 // TLS parses the ClientHello message on conn and returns
 // a new, unread connection with metadata for virtual host muxing
 func TLS(conn net.Conn) (tlsConn *TLSConn, err error) {
+	return tlsWithECHProvider(conn, nil)
+}
+
+// ECH same as TLS, but with ECH extension enabled.
+func ECH(conn net.Conn, echProvider tls.ECHProvider) (tlsConn *TLSConn, err error) {
+	return tlsWithECHProvider(conn, echProvider)
+}
+
+func tlsWithECHProvider(conn net.Conn, echProvider tls.ECHProvider) (tlsConn *TLSConn, err error) {
 	c, rd := newShared(conn)
 
 	tlsConn = &TLSConn{SharedConn: c}
-	if tlsConn.ClientHelloInfo, err = readClientHello(rd); err != nil {
+	if tlsConn.ClientHelloInfo, err = readClientHello(rd, echProvider); err != nil {
 		return
 	}
 
@@ -45,7 +54,7 @@ func (c *TLSConn) Free() {
 	c.ClientHelloInfo = nil
 }
 
-func readClientHello(r io.Reader) (*tls.ClientHelloInfo, error) {
+func readClientHello(r io.Reader, echProvider tls.ECHProvider) (*tls.ClientHelloInfo, error) {
 	var hello *tls.ClientHelloInfo
 
 	err := tls.Server(sniSniffConn{r: r}, &tls.Config{
@@ -54,6 +63,8 @@ func readClientHello(r io.Reader) (*tls.ClientHelloInfo, error) {
 			*hello = *argHello
 			return nil, nil
 		},
+		ECHEnabled:        echProvider != nil,
+		ServerECHProvider: echProvider,
 	}).Handshake()
 
 	if hello == nil {
